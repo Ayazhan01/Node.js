@@ -36,5 +36,32 @@ app.post('/users/login', async(req, res) => {
         res.status(500).send()
     }
 })
+app.post('/forgot', async(req, res) => {
+    const thisUser = getUser(req.body.email);
+    if (thisUser) {
+        const id = uuidv1();
+        const request = {
+            id,
+            email: thisUser.email,
+        };
+        createResetRequest(request);
+        sendResetLink(thisUser.email, id);
+    }
+    res.status(200).json();
+});
+
+app.post('/reset', async(req, res) => {
+    const thisRequest = getResetRequest(req.body.id);
+    if (thisRequest) {
+        const user = getUser(thisRequest.email);
+        bcrypt.hash(req.body.password, 10).then(hashed => {
+            user.password = hashed;
+            updateUser(user);
+            res.status(204).json();
+        })
+    } else {
+        res.status(404).json();
+    }
+});
 
 app.listen(3000)
